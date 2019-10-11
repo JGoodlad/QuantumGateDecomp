@@ -1,29 +1,21 @@
-import sys, os, time
+import os, sys, time
 
 import numpy as np
 
-import quantum_test_case
-
-from FluentProgramCirq import FluentProgramCirq
-from utilCirq import getAll1Indexes, toBitString
-
+from scipy import linalg
 
 from cirq import ControlledGate
 from cirq.ops import CNOT, H, S, X, Z
 from cirq.ops.matrix_gates import SingleQubitMatrixGate
 
-from scipy import linalg
-
-import gates_cirq
-
+import primitives
 
 class RecuriveControlledGate(object):
 
-    def __init__(self):
-        self.primitives = gates_cirq.GatesCirq()
-        pass
+    def __init__(self, gate_primitves: primitives.GatePrimitives):
+        self.primitives: primitives.GatePrimitives = gate_primitves
 
-    def _raise_expected_control_qubit_error(self, name):
+    def _raise_expected_control_qubit_error(self, name: str):
         raise ValueError(f'{name} expected at least 1 control qubit')
 
     def _controlled_single_qubit_matrix_gate(self, matrix, action_qubit, control_qubit):
@@ -62,46 +54,3 @@ class RecuriveControlledGate(object):
         gates = self._controlled_n_unitary_gate_recursive(unitary, action_qubit, *control_qubits)
         # print(f'Gates used in construction: {len(gates)}')
         return gates
-
-
-
-class TestDriver(object):
-    def TestToffoliNative(self, n: int, inputString:str) -> bool:
-        qt = quantum_test_case.QuantumTestCase()
-
-        qubits = qt.get_qubits(n)
-
-        initial_state = qt.to_state(inputString)
-
-        gates = RecuriveControlledGate().controlled_n_unitary_gate(
-            X._unitary_(), qubits[-1], *qubits[:-1])
-
-        final_state = qt.simulate(qubits, gates, initial_state)
-
-        expected_gates = [gates_cirq.GatesCirq().CnNOT(qubits[-1], *qubits[:-1])]
-        expected_final_state = qt.simulate(qubits, expected_gates, initial_state)
-
-        isPass = np.array_equal(final_state, expected_final_state)
-
-        print(f'{"Passed:" if isPass else "FAILED:"} ToffoliNative Returned: {final_state}, Expected: {expected_final_state}, Input: {inputString}')
-        return isPass
-
-
-if __name__ == "__main__":
-    for n in range(2, 4):
-        t = []
-        tests = 2**n
-        for i in range(tests - 4, tests):
-            s = ("{0:0"+ str(n) + "b}").format(i)
-            if s[-1] != '0':
-                continue
-            start = time.time()
-            res = TestDriver().TestToffoliNative(n, s)
-            if not res:
-                raise Exception("Not Correct.")
-
-            end = time.time()
-            curr = end-start
-            t.append(curr)
-        if t:
-            print(sum(t)/len(t))

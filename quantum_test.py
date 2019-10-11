@@ -7,7 +7,6 @@ import numpy as np
 
 from abstract_qubit import CirqQubit, Qubit
 
-
   
 class QuantumTestCase(unittest.TestCase):
     """Provides methods for convenient QC unit testing."""

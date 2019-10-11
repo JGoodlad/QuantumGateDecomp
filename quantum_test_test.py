@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import numpy.testing
 
-from quantum_test_case import QuantumTestCase
+from quantum_test import QuantumTestCase
 
 class QuantumTestCaseTest(unittest.TestCase):
 

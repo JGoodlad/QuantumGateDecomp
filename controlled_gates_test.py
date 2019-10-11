@@ -5,20 +5,22 @@ import numpy.testing
 
 import controlled_gates
 import gate_literals
-import gates_cirq
-import quantum_test_case
+import primitives_cirq
+import quantum_test
 
-class RecuriveControlledGateTest(quantum_test_case.QuantumTestCase):
+
+
+class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
     _MAX_QUBITS = 6
 
     def setUp(self):
         super().setUp()
 
-        self.primitves = gates_cirq.GatesCirq()
+        self.primitves = primitives_cirq.CirqGatePrimites()
 
     def test_controlled_n_unitary_gate(self):
 
-        gate_builder = controlled_gates.RecuriveControlledGate()
+        gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
         theta = np.pi / 4
         gates_to_test = [
             gate_literals.X, 

@@ -2,27 +2,29 @@ import cirq
 import cirq.ops
 
 import abstract_qubit
+import primitives
 
-class GatesCirq:
-    def H(self, qubit: abstract_qubit.CirqQubit):
+class CirqGatePrimites(primitives.GatePrimitives):
+
+    def H(self, qubit):
         return cirq.H(qubit.native_qubit)
     
-    def X(self, qubit: abstract_qubit.CirqQubit):
+    def X(self, qubit):
         return cirq.X(qubit.native_qubit)
 
-    def CNOT(self, action_qubit: abstract_qubit.CirqQubit, control_qubit: abstract_qubit.CirqQubit):
+    def CNOT(self, action_qubit, control_qubit):
         return cirq.CNOT(control_qubit.native_qubit, action_qubit.native_qubit)
     
     def CnNOT(self, action_qubit, *control_qubits):
         return self.CnU(cirq.ops.X._unitary_(), action_qubit, *control_qubits)
     
-    def Rx(self, rads, qubit: abstract_qubit.CirqQubit):
+    def Rx(self, rads, qubit):
         return cirq.Rx(rads)(qubit.native_qubit)
 
-    def Ry(self, rads, qubit: abstract_qubit.CirqQubit):
+    def Ry(self, rads, qubit):
         return cirq.Ry(rads)(qubit.native_qubit)
         
-    def Rz(self, rads, qubit: abstract_qubit.CirqQubit):
+    def Rz(self, rads, qubit):
         return cirq.Rz(rads)(qubit.native_qubit)
 
     def U(self, unitary_matrix, qubit):
