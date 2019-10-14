@@ -56,7 +56,8 @@ class QuantumTestCase(unittest.TestCase):
             else:
                 raise ValueError('to_state expected only 1s and 0s')
             state = np.kron(state, qubit)
-        
+
+        state.flags.writeable = False
         return state
     
     def to_bit_string(self, n, num_qubits):
