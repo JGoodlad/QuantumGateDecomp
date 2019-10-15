@@ -57,7 +57,7 @@ class RecuriveControlledGate(object):
         return gates
 
 
-class ElementaryUControlledGate(object):
+class ElementarilyComposedGates(object):
 
     def __init__(self, gate_primitves: primitives.GatePrimitives):
         self.primitives = gate_primitves
@@ -67,102 +67,38 @@ class ElementaryUControlledGate(object):
         if not np.isclose(det, 1):
             raise AssertionError('Expected unitary determinant.')
 
+    def _assert_close(self, actual, expected):
+        if not np.allclose(actual, expected):
+            raise AssertionError('Actual value not close to expected')
+
     def U(self, unitary_matrix, qubit):
+        g, a, b, t = self._gamma_alpha_beta_theta_factorization(unitary_matrix)
+
         gates = []
-
-        det = np.linalg.det(unitary_matrix)
-
-        # Correction to make det = 1
-        # TODO: Understand why preappend the conj of phase, not phase
-        if not np.isclose(det, 1):
-            phase = np.sqrt(1/det) * np.identity(2)
-
-            unitary_matrix = phase @ unitary_matrix
-            gates += [self.primitives.U(phase.conj(), qubit)]
-
-            self._assert_det_unitary(unitary_matrix)
-
-        q11 = unitary_matrix[0][0]
-        q21 = unitary_matrix[0][1]
-
-        _theta = np.arccos(np.abs(q11))
-        _alpha = np.angle(q11)
-        _beta = np.angle(q21)
-
         
-        m1, m2, m3 = self.U_as_phase_rotation_phase(_alpha, _beta, _theta)
+        gates += [self.primitives.Ph(g, qubit)]
+        gates += [self.primitives.Rz(-a, qubit)]
+        gates += [self.primitives.Ry(-t, qubit)]
+        gates += [self.primitives.Rz(-b, qubit)]
 
-        # TODO: Understand why m3 is the first, it seems it should be m1
-        gates += [self.primitives.U(m1, qubit)]
-        gates += [self.primitives.U(m2, qubit)]
-        gates += [self.primitives.U(m3, qubit)]
-
-        return gates
+        program_ordered_gates = gates[::-1]
+        return program_ordered_gates
     
-    def U_as_rotation(self, a, b, t):
-        a1 = [np.exp(1j * a) * np.cos(t), np.exp(1j * b) * np.sin(t)]
-        a2 = [-1 * np.exp(1j * -b) * np.sin(t), np.exp(1j * -a) * np.cos(t)]
-        return np.array([a1, a2])
-
-    def U_as_phase_rotation_phase(self, a, b, t):
-        # φ1 = ψ + Δ and φ2 = ψ − Δ
-        # p1 - p2 = 2d
-        psi = (a + b) / 2
-        delta = (a - b) / 2
-        m1 = self.phase(delta)
-        m2 = self.rotation(t)
-        m3 = self.phase(psi)
-
-        return m1, m2, m3
-
-    def rotation(self, x):
-        row1 = [np.cos(x), np.sin(x)]
-        row2 = [-np.sin(x), np.cos(x)]
-        return np.array([row1, row2])
-
-    def phase(self, x):
-        row1 = [np.exp(+1j * x), 0]
-        row2 = [0, np.exp(-1j * x)]
-        return np.array([row1, row2])
-
-    # def C1U(self, unitary_matrix, action_qubit, control_qubit):
-    #     pass
-
-    def U_1_gate(self, unitary_matrix, qubit):
-        gates = []
+    def _gamma_alpha_beta_theta_factorization(self, unitary_matrix):
+        # copy matrix to avoid changing it
+        unitary_matrix = np.copy(unitary_matrix)
 
         det = np.linalg.det(unitary_matrix)
+        gamma = np.angle(np.sqrt(det))
+        special_unitary_matrix = 1 / np.sqrt(det) * unitary_matrix
+        self._assert_det_unitary(special_unitary_matrix)
 
-        # Correction to make det = 1
-        # TODO: Understand why preappend the conj of phase, not phase
-        if not np.isclose(det, 1):
-            phase = np.sqrt(1/det) * np.identity(2)
+        u00, u01  = special_unitary_matrix[0][[0, 1]]
 
-            unitary_matrix = phase @ unitary_matrix
-            gates += [self.primitives.U(phase.conj(), qubit)]
+        a, b = np.angle(u00), np.angle(u01)
+        # a = alpha + beta and bφ2 = alpha -  beta
+        alpha = (a + b) / 2
+        beta = (a - b) / 2
+        theta = np.arccos(np.abs(u00))
 
-            self._assert_det_unitary(unitary_matrix)
-
-        q11 = unitary_matrix[0][0]
-        q21 = unitary_matrix[0][1]
-
-        _theta = np.arccos(np.abs(q11))
-        _alpha = np.angle(q11)
-        _beta = np.angle(q21)
-
-        
-        matrix = self.U_as_rotation(_alpha, _beta, _theta)
-
-        gates += [self.primitives.U(matrix, qubit)]
-
-
-        # alpha = np.pi / 2
-        # beta = np.pi * 7 / 2
-        # theta = 2 * np.arccos(abs(q11))
-
-        # gates = []
-        # gates += [self.primitives.Rz(alpha, qubit)]
-        # gates += [self.primitives.Ry(theta, qubit)]
-        # gates += [self.primitives.Rz(beta, qubit)]
-
-        return gates
+        return gamma, alpha * 2, beta * 2, theta * 2

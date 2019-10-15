@@ -50,12 +50,13 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
 
                         np.testing.assert_almost_equal(actual_final_state, expected_final_state)
 
-    def test_controlled_1_unitary_gate(self):
-        gate_builder = controlled_gates.ElementaryUControlledGate(self.primitves)
+    def test_ElementarilyComposedGates_U(self):
+        gate_builder = controlled_gates.ElementarilyComposedGates(self.primitves)
         theta = np.pi / 4
         gates_to_test = [
             gate_literals.SQRT_X,
             gate_literals.SQRT_(gate_literals.SQRT_X),
+            gate_literals.SQRT_(gate_literals.SQRT_(gate_literals.SQRT_X)),
             gate_literals.H,
             gate_literals.X,
             gate_literals.Y, 
