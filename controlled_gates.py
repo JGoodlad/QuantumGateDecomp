@@ -3,7 +3,7 @@ import os, sys, time
 import numpy as np
 import numpy.linalg
 
-from scipy import linalg
+import scipy
 
 from cirq import ControlledGate
 from cirq.ops import CNOT, H, S, X, Z
@@ -38,7 +38,7 @@ class RecuriveControlledGate(object):
         c_n_not = self._controlled_n_not_gate
         
         u = matrix
-        v = linalg.sqrtm(u)
+        v = scipy.linalg.sqrtm(u)
         v_h = v.conjugate().transpose()
 
         gates = []
@@ -83,6 +83,41 @@ class ElementarilyComposedGates(object):
 
         program_ordered_gates = gates[::-1]
         return program_ordered_gates
+
+    def CU(self, unitary_matrix, action_qubit, control_qubit):
+        g, a, b, t = self._gamma_alpha_beta_theta_factorization(unitary_matrix)
+        
+        gates = []
+        
+        def A():
+            nonlocal gates
+            gates += [self.primitives.Rz(-a, action_qubit)]
+            gates += [self.primitives.Ry(-t/2, action_qubit)]
+
+        def B():
+            nonlocal gates
+            gates += [self.primitives.Ry(t/2, action_qubit)]
+            gates += [self.primitives.Rz((a + b)/ 2, action_qubit)]
+
+        def C():
+            nonlocal gates
+            gates += [self.primitives.Rz(-1 * (b - a)/2, action_qubit)]
+        
+        def CPh():
+            nonlocal gates
+            gates += [self.primitives.Rz(g, control_qubit)]
+            gates += [self.primitives.Ph(g/2, control_qubit)]
+
+        CPh()
+        A()
+        gates += [self.primitives.CNOT(action_qubit, control_qubit)]
+        B()
+        gates += [self.primitives.CNOT(action_qubit, control_qubit)]
+        C()
+
+        program_ordered_gates = gates[::-1]
+        return program_ordered_gates
+
     
     def _gamma_alpha_beta_theta_factorization(self, unitary_matrix):
         # copy matrix to avoid changing it
@@ -96,7 +131,7 @@ class ElementarilyComposedGates(object):
         u00, u01  = special_unitary_matrix[0][[0, 1]]
 
         a, b = np.angle(u00), np.angle(u01)
-        # a = alpha + beta and bφ2 = alpha -  beta
+        # a = alpha + beta and b = alpha -  beta
         alpha = (a + b) / 2
         beta = (a - b) / 2
         theta = np.arccos(np.abs(u00))
