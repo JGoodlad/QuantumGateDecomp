@@ -1,9 +1,14 @@
 import os, sys, time
 
+from typing import List
+
 import numpy as np
 import numpy.linalg
 
 import scipy
+import scipy.linalg
+
+import sympy.combinatorics.graycode
 
 from cirq import ControlledGate
 from cirq.ops import CNOT, H, S, X, Z
@@ -55,6 +60,65 @@ class RecuriveControlledGate(object):
         gates = self._controlled_n_unitary_gate_recursive(unitary, action_qubit, *control_qubits)
         # print(f'Gates used in construction: {len(gates)}')
         return gates
+
+class IterativeControlledGate(object):
+    def __init__(self, gate_primitves: primitives.GatePrimitives):
+        self.primitives = gate_primitves
+
+    def _get_operation_codes(self, n: int) -> List[str]:
+        gray_code_generator = sympy.combinatorics.graycode.GrayCode(n).generate_gray()
+        gray_codes = list(gray_code_generator)[1:]
+        operation_codes = [c[::-1] for c in gray_codes]
+
+        return operation_codes
+
+    def _controlled_n_unitary_gate_iterative(self, unitary, action_qubit, *control_bits):
+
+        gates = []
+
+        def xor(*qubits):
+            nonlocal gates
+            for q in qubits[:-1]:
+                gates += [self.primitives.CNOT(qubits[-1], q)]
+
+        def qubits_from_code(operation_code):
+            qubits = []
+            for code_bit, qubit in zip(operation_code, control_bits):
+                if code_bit == '1':
+                    qubits += [qubit]
+            return qubits
+
+        def parity(operation_code: str):
+            return operation_code.count('1') % 2 == 0
+
+        def root(matrix, nth_power_of_two: int):
+            for _ in range(nth_power_of_two):
+                matrix = scipy.linalg.sqrtm(matrix)
+            return matrix
+
+        v = root(unitary, len(control_bits) - 1)
+        v_h = v.conjugate().transpose()
+        operations = self._get_operation_codes(len(control_bits))
+
+        for op in operations:
+            qubits = qubits_from_code(op)
+            xor(*qubits)
+            if not parity(op):
+                gates += [self.primitives.CU(v, action_qubit, qubits[-1])]
+            else:
+                gates += [self.primitives.CU(v_h, action_qubit, qubits[-1])]
+            xor(*qubits)
+        
+        program_ordered_gates = gates[::-1]
+        return program_ordered_gates
+
+
+    def controlled_n_unitary_gate(self, unitary, action_qubit, *control_qubits):
+        gates = self._controlled_n_unitary_gate_iterative(unitary, action_qubit, *control_qubits)
+
+        return gates
+
+    
 
 
 class ElementarilyComposedGates(object):
