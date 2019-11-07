@@ -72,6 +72,38 @@ class IterativeControlledGate(object):
 
         return operation_codes
 
+    def _get_involved_qubits(self, operation_code, control_qubits):
+        qubits = []
+        for code_bit, qubit in zip(operation_code, control_qubits):
+            if code_bit == '1':
+                qubits += [qubit]
+        return qubits
+    
+    def _get_last_involved_qubit(self, operation_code, control_qubits):
+        for code_bit, qubit in zip(operation_code[::-1], control_qubits[::-1]):
+            if code_bit == '1':
+                return qubit
+        pass
+
+    def _get_dif_xored_qubits(self, current_opetation_code, previous_operation_code, control_qubits):
+        def qubit_tuples(operation_code):
+            qubits = self._get_involved_qubits(operation_code, control_qubits)
+            qubit_tuples = []
+            for q in qubits[:-1]:
+                qubit_tuples += [(q, qubits[-1])]
+            return qubit_tuples
+        
+        qubits = []
+        tuples1, tuples2 = qubit_tuples(current_opetation_code), qubit_tuples(previous_operation_code)
+
+        tl, ts = sorted([tuples1, tuples2], reverse=True, key=lambda x: len(x))
+
+        change = list(set(tl) - set(ts))
+        if not change:
+            return []
+        return list(*change) 
+
+
     def _controlled_n_unitary_gate_iterative(self, unitary, action_qubit, *control_bits):
 
         gates = []
@@ -80,32 +112,6 @@ class IterativeControlledGate(object):
             nonlocal gates
             for q in qubits[:-1]:
                 gates += [self.primitives.CNOT(qubits[-1], q)]
-
-        def qubit_tuples(operation_code):
-            qubits = []
-            for code_bit, qubit in zip(operation_code, control_bits):
-                if code_bit == '1':
-                    qubits += [qubit]
-            qubit_tuples = []
-            for q in qubits[:-1]:
-                qubit_tuples += [(q, qubits[-1])]
-            return qubit_tuples
-        
-        def qubit_diff(curr_op_code, prev_opcode):
-            qubits = []
-            tuples1, tuples2 = qubit_tuples(curr_op_code), qubit_tuples(prev_opcode)
-
-            tl, ts = sorted([tuples1, tuples2], reverse=True, key=lambda x: len(x))
-
-            change = [set(tl) - set(ts)][0]
-            return list(*change) 
-
-        def last_qubit(operation_code):
-            last = None
-            for operation_bit, qubit in zip(operation_code, control_bits):
-                if operation_bit == '1':
-                    last = qubit
-            return last
 
         def parity(operation_code: str):
             return operation_code.count('1') % 2 == 0
@@ -120,15 +126,22 @@ class IterativeControlledGate(object):
         operations = self._get_operation_codes(len(control_bits))
 
         prev_op = operations[0]
-        for op in operations[1:]:
-            qubits = qubit_diff(op, prev_op)
-            xor(*qubits)
-            last_xored_qubit = last_qubit(op)
-            if not parity(op):
-                gates += [self.primitives.CU(v, action_qubit, last_xored_qubit)]
+        for curr_op in operations[1:]:
+            # Get the different xored qubits
+            xored_qubits = self._get_dif_xored_qubits(curr_op, prev_op, control_bits)
+
+            # Apply xor
+            xor(*xored_qubits)
+
+            last_involved_qubit = self._get_last_involved_qubit(curr_op, control_bits)
+
+            if not parity(curr_op):
+                # Odd; apply normal
+                gates += [self.primitives.CU(v, action_qubit, last_involved_qubit)]
             else:
-                gates += [self.primitives.CU(v_h, action_qubit, last_xored_qubit)]
-            prev_op = op
+                # Even; apply inverse
+                gates += [self.primitives.CU(v_h, action_qubit, last_involved_qubit)]
+            prev_op = curr_op
         
         program_ordered_gates = gates[::-1]
         return program_ordered_gates
