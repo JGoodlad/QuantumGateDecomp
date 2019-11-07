@@ -10,7 +10,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 6
+    _MAX_QUBITS = 5
 
     def setUp(self):
         super().setUp()
@@ -44,7 +44,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
                         initial_state = self.to_state(initial_bit_string)
 
                         actual_gates = gate_builder.controlled_n_unitary_gate(gate, qubits[-1], *qubits[:-1])
-                        actual_final_state = self.simulate(qubits, actual_gates, np.copy(initial_state))
+                        actual_final_state = self.simulate(qubits, actual_gates, np.copy(initial_state), print_circuit=True)
 
                         expected_gates = [self.primitves.CnU(gate, qubits[-1], *qubits[:-1])]
                         expected_final_state = self.simulate(qubits, expected_gates, np.copy(initial_state))

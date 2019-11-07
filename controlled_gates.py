@@ -67,7 +67,7 @@ class IterativeControlledGate(object):
 
     def _get_operation_codes(self, n: int) -> List[str]:
         gray_code_generator = sympy.combinatorics.graycode.GrayCode(n).generate_gray()
-        gray_codes = list(gray_code_generator)[1:]
+        gray_codes = list(gray_code_generator)
         operation_codes = [c[::-1] for c in gray_codes]
 
         return operation_codes
@@ -81,12 +81,31 @@ class IterativeControlledGate(object):
             for q in qubits[:-1]:
                 gates += [self.primitives.CNOT(qubits[-1], q)]
 
-        def qubits_from_code(operation_code):
+        def qubit_tuples(operation_code):
             qubits = []
             for code_bit, qubit in zip(operation_code, control_bits):
                 if code_bit == '1':
                     qubits += [qubit]
-            return qubits
+            qubit_tuples = []
+            for q in qubits[:-1]:
+                qubit_tuples += [(q, qubits[-1])]
+            return qubit_tuples
+        
+        def qubit_diff(curr_op_code, prev_opcode):
+            qubits = []
+            tuples1, tuples2 = qubit_tuples(curr_op_code), qubit_tuples(prev_opcode)
+
+            tl, ts = sorted([tuples1, tuples2], reverse=True, key=lambda x: len(x))
+
+            change = [set(tl) - set(ts)][0]
+            return list(*change) 
+
+        def last_qubit(operation_code):
+            last = None
+            for operation_bit, qubit in zip(operation_code, control_bits):
+                if operation_bit == '1':
+                    last = qubit
+            return last
 
         def parity(operation_code: str):
             return operation_code.count('1') % 2 == 0
@@ -100,14 +119,16 @@ class IterativeControlledGate(object):
         v_h = v.conjugate().transpose()
         operations = self._get_operation_codes(len(control_bits))
 
-        for op in operations:
-            qubits = qubits_from_code(op)
+        prev_op = operations[0]
+        for op in operations[1:]:
+            qubits = qubit_diff(op, prev_op)
             xor(*qubits)
+            last_xored_qubit = last_qubit(op)
             if not parity(op):
-                gates += [self.primitives.CU(v, action_qubit, qubits[-1])]
+                gates += [self.primitives.CU(v, action_qubit, last_xored_qubit)]
             else:
-                gates += [self.primitives.CU(v_h, action_qubit, qubits[-1])]
-            xor(*qubits)
+                gates += [self.primitives.CU(v_h, action_qubit, last_xored_qubit)]
+            prev_op = op
         
         program_ordered_gates = gates[::-1]
         return program_ordered_gates
@@ -115,7 +136,6 @@ class IterativeControlledGate(object):
 
     def controlled_n_unitary_gate(self, unitary, action_qubit, *control_qubits):
         gates = self._controlled_n_unitary_gate_iterative(unitary, action_qubit, *control_qubits)
-
         return gates
 
     

@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\JohnG\\Anaconda3\\envs\\PyQuil\\python.exe",
+    "python.pythonPath": "C:\\Users\\Johng\\.conda\\envs\\Quant\\python.exe",
     "python.formatting.provider": "black",
     "python.testing.unittestArgs": [
         "-v",
@@ -10,5 +10,9 @@
     ],
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true
+    "python.testing.unittestEnabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": ["--generate-members"],
+    
 }
