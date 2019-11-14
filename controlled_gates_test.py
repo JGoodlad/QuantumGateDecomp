@@ -1,3 +1,5 @@
+import time
+
 import unittest
 
 import numpy as np
@@ -10,7 +12,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 5
+    _MAX_QUBITS = 8
 
     def setUp(self):
         super().setUp()
@@ -29,6 +31,19 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
             gate_literals.Rx(theta), 
             gate_literals.Ry(theta),
             gate_literals.Rz(theta)
+        ]
+
+        self.named_gates_to_test = [
+            ('X^(1/2)',  gate_literals.SQRT_X),
+            ('X^(1/4)', gate_literals.SQRT_(gate_literals.SQRT_X)),
+            ('X^(1/8)', gate_literals.SQRT_(gate_literals.SQRT_(gate_literals.SQRT_X))),
+            ('H', gate_literals.H),
+            ('X', gate_literals.X),
+            ('Y', gate_literals.Y), 
+            ('Z', gate_literals.Z), 
+            ('Rx', gate_literals.Rx(theta)), 
+            ('Ry', gate_literals.Ry(theta)),
+            ('Rz', gate_literals.Rz(theta))
         ]
 
     def test_IterativeControlledGate_CU(self):
@@ -110,6 +125,47 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
 
                     np.testing.assert_almost_equal(actual_final_state, expected_final_state, decimal=5)
 
+    def test_GateTiming(self):
+        recursive_gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
+        iterative_gate_builder = controlled_gates.IterativeControlledGate(self.primitves)
+
+        recursive_CN = lambda *x: recursive_gate_builder.controlled_n_unitary_gate(*x)
+        iterative_CN = lambda *x: iterative_gate_builder.controlled_n_unitary_gate(*x)
+
+        out_file = open('out_file.txt', 'w')
+
+        for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
+            for n in range(2, self._MAX_QUBITS + 1):
+                qubits = self.get_qubits(n)
+                for initial_state_number in range(0, 2**n):
+                    for gate_name, gate in self.named_gates_to_test:
+                        initial_bit_string = self.to_bit_string(initial_state_number, n)
+                        initial_state = self.to_state(initial_bit_string)
+
+                        initial_bit_string = self.to_bit_string(initial_state_number, n)
+                        initial_state = self.to_state(initial_bit_string)
+
+                        construction_time, actual_gates = self.elapsed_time(lambda: CN(gate, qubits[-1], *qubits[:-1]))
+                        simulation_time, actual_final_state = self.elapsed_time(lambda: self.simulate(qubits, actual_gates, np.copy(initial_state)))
+
+                        expected_gates = [self.primitves.CnU(gate, qubits[-1], *qubits[:-1])]
+                        expected_final_state = self.simulate(qubits, expected_gates, np.copy(initial_state))
+
+                        diff = np.sum(np.abs(expected_final_state - expected_final_state))
+                        total_initial = np.sum(np.abs(expected_final_state))
+                        percent = diff / total_initial
+                        print(name, gate_name, n, initial_state_number, construction_time, simulation_time, diff, total_initial, percent, sep='\t', file=out_file)
+        out_file.close()
+
+
+
+
+    def elapsed_time(self, f):
+        start = time.time()
+        ret = f()
+        end = time.time()
+        elapsed = int(round((end - start) * 1000))
+        return elapsed, ret
 
 if __name__ == '__main__':
     unittest.main()
