@@ -12,7 +12,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 8
+    _MAX_QUBITS = 10
 
     def setUp(self):
         super().setUp()
@@ -154,7 +154,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
                         diff = np.sum(np.abs(expected_final_state - expected_final_state))
                         total_initial = np.sum(np.abs(expected_final_state))
                         percent = diff / total_initial
-                        print(name, gate_name, n, initial_state_number, construction_time, simulation_time, diff, total_initial, percent, sep='\t', file=out_file)
+                        print(name, gate_name, n, initial_state_number, construction_time, simulation_time, diff, total_initial, percent, sep='\t', file=out_file, flush=True)
         out_file.close()
 
 
