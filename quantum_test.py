@@ -4,6 +4,7 @@ from typing import Any, List
 
 import cirq
 import numpy as np
+import numpy.testing
 
 from abstract_qubit import CirqQubit, Qubit
 
@@ -64,6 +65,35 @@ class QuantumTestCase(unittest.TestCase):
         binary_num = bin(n)[2:]
         padded = binary_num.zfill(num_qubits)
         return padded
+
+    def get_precision(self, actual, expected):
+        precision = 0
+        max_precision = 17
+        try:
+            for try_precision in range(0, max_precision + 1):
+                np.testing.assert_almost_equal(actual, expected, decimal=try_precision, verbose=False)
+                precision = try_precision
+        except Exception as e:
+            print(e)
+            pass
+
+        return precision
+
+    def get_max_absolute_error(self, actual, expected):
+        flat_actual = actual.flatten()
+        flat_expected = expected.flatten()
+
+        max_abs_error = abs(flat_expected - flat_actual).max()
+        return max_abs_error
+
+    def get_euclidean_error(self, actaul, expected):
+        flat_actual = actaul.flatten()
+        flat_expected = expected.flatten()
+        
+        squared = np.square(flat_expected - actaul)
+
+        euclid_error =  np.sqrt(np.sum(squared))
+        return euclid_error
 
     @property
     def basis_0(self):
