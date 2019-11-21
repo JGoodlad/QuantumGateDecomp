@@ -12,7 +12,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 9
+    _MAX_QUBITS = 7
 
     def setUp(self):
         super().setUp()
@@ -134,7 +134,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
 
         out_file = open('out_file.csv', 'w')
 
-        print('name,gate_name,n,initial_state_number,construction_time,simulation_time,precision,abs_error,euclid_error')
+        print('name,gate_name,n,initial_state_number,construction_time,simulation_time,precision,abs_error,euclid_error', file=out_file)
         for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
             for n in range(2, self._MAX_QUBITS + 1):
                 qubits = self.get_qubits(n)
@@ -158,6 +158,49 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
 
                         print(name, gate_name, n, initial_state_number, construction_time, simulation_time, precision, abs_error, euclid_error,
                         sep=',', file=out_file, flush=True)
+        out_file.close()
+        
+
+    def test_GateTimingAvg(self):
+        recursive_gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
+        iterative_gate_builder = controlled_gates.IterativeControlledGate(self.primitves)
+
+        recursive_CN = lambda *x: recursive_gate_builder.controlled_n_unitary_gate(*x)
+        iterative_CN = lambda *x: iterative_gate_builder.controlled_n_unitary_gate(*x)
+
+        out_file = open('out_file_avg.csv', 'w')
+
+        print('name,gate_name,n,np.average(construction_times),np.average(simulation_times),np.min(precisions),np.average(abs_errors),np.average(euclid_errors)', file=out_file)
+        for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
+            for n in range(2, self._MAX_QUBITS + 1):
+                qubits = self.get_qubits(n)
+                for gate_name, gate in self.named_gates_to_test:
+                    construction_times = []
+                    simulation_times = []
+                    precisions = []
+                    abs_errors = []
+                    euclid_errors = []
+                    for initial_state_number in range(0, 2**n):
+                        initial_bit_string = self.to_bit_string(initial_state_number, n)
+                        initial_state = self.to_state(initial_bit_string)
+
+                        initial_bit_string = self.to_bit_string(initial_state_number, n)
+                        initial_state = self.to_state(initial_bit_string)
+
+                        construction_time, actual_gates = self.elapsed_time(lambda: CN(gate, qubits[-1], *qubits[:-1]))
+                        construction_times += [construction_time]
+                        simulation_time, actual_final_state = self.elapsed_time(lambda: self.simulate(qubits, actual_gates, np.copy(initial_state)))
+                        simulation_times += [simulation_time]
+
+                        expected_gates = [self.primitves.CnU(gate, qubits[-1], *qubits[:-1])]
+                        expected_final_state = self.simulate(qubits, expected_gates, np.copy(initial_state))
+
+                        precisions += [self.get_precision(actual_final_state, expected_final_state)]
+                        abs_errors += [self.get_max_absolute_error(actual_final_state, expected_final_state)]
+                        euclid_errors += [self.get_euclidean_error(actual_final_state, expected_final_state)]
+
+                    print(name, gate_name, n, np.average(construction_times), np.average(simulation_times), np.amin(precisions), np.average(abs_errors), np.average(euclid_errors),
+                    sep=',', file=out_file, flush=True)
         out_file.close()
 
 
