@@ -1,3 +1,4 @@
+import os, sys
 import unittest 
 
 from typing import Any, List
@@ -69,12 +70,12 @@ class QuantumTestCase(unittest.TestCase):
     def get_precision(self, actual, expected):
         precision = 0
         max_precision = 17
+
         try:
             for try_precision in range(0, max_precision + 1):
                 np.testing.assert_almost_equal(actual, expected, decimal=try_precision, verbose=False)
                 precision = try_precision
         except Exception as e:
-            print(e)
             pass
 
         return precision
@@ -89,8 +90,8 @@ class QuantumTestCase(unittest.TestCase):
     def get_euclidean_error(self, actaul, expected):
         flat_actual = actaul.flatten()
         flat_expected = expected.flatten()
-        
-        squared = np.square(flat_expected - actaul)
+
+        squared = np.square(np.abs(flat_expected - actaul))
 
         euclid_error =  np.sqrt(np.sum(squared))
         return euclid_error

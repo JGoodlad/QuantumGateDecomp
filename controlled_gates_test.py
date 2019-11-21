@@ -12,7 +12,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 10
+    _MAX_QUBITS = 9
 
     def setUp(self):
         super().setUp()
@@ -132,8 +132,9 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
         recursive_CN = lambda *x: recursive_gate_builder.controlled_n_unitary_gate(*x)
         iterative_CN = lambda *x: iterative_gate_builder.controlled_n_unitary_gate(*x)
 
-        out_file = open('out_file.txt', 'w')
+        out_file = open('out_file.csv', 'w')
 
+        print('name,gate_name,n,initial_state_number,construction_time,simulation_time,precision,abs_error,euclid_error')
         for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
             for n in range(2, self._MAX_QUBITS + 1):
                 qubits = self.get_qubits(n)
@@ -151,10 +152,12 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
                         expected_gates = [self.primitves.CnU(gate, qubits[-1], *qubits[:-1])]
                         expected_final_state = self.simulate(qubits, expected_gates, np.copy(initial_state))
 
-                        diff = np.sum(np.abs(expected_final_state - expected_final_state))
-                        total_initial = np.sum(np.abs(expected_final_state))
-                        percent = diff / total_initial
-                        print(name, gate_name, n, initial_state_number, construction_time, simulation_time, diff, total_initial, percent, sep='\t', file=out_file, flush=True)
+                        precision = self.get_precision(actual_final_state, expected_final_state)
+                        abs_error = self.get_max_absolute_error(actual_final_state, expected_final_state)
+                        euclid_error = self.get_euclidean_error(actual_final_state, expected_final_state)
+
+                        print(name, gate_name, n, initial_state_number, construction_time, simulation_time, precision, abs_error, euclid_error,
+                        sep=',', file=out_file, flush=True)
         out_file.close()
 
 
