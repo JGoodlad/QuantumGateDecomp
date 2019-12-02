@@ -12,7 +12,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 7
+    _MAX_QUBITS = 11
 
     def setUp(self):
         super().setUp()
@@ -171,8 +171,9 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
         out_file = open('out_file_avg.csv', 'w')
 
         print('name,gate_name,n,np.average(construction_times),np.average(simulation_times),np.min(precisions),np.average(abs_errors),np.average(euclid_errors)', file=out_file)
-        for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
-            for n in range(2, self._MAX_QUBITS + 1):
+        
+        for n in range(2, self._MAX_QUBITS + 1):
+            for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
                 qubits = self.get_qubits(n)
                 for gate_name, gate in self.named_gates_to_test:
                     construction_times = []
