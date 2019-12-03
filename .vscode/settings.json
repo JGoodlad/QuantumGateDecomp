@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\JohnG\\Anaconda3\\envs\\PyQuil\\python.exe",
+    "python.pythonPath": "C:\\Users\\Johng\\.conda\\envs\\Quant\\python.exe",
     "python.formatting.provider": "black",
     "python.testing.unittestArgs": [
         "-v",

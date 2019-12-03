@@ -12,7 +12,7 @@ import quantum_test
 
 
 class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 11
+    _MAX_QUBITS = 10
 
     def setUp(self):
         super().setUp()
