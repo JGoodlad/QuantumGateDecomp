@@ -11,6 +11,7 @@ import quantum_test
 
 
 class FiddleTest(quantum_test.QuantumTestCase):
+    n_max = 12
 
     def test_SigFigsNthRoot(self):
         def root(matrix, nth_power_of_two: int):
@@ -25,8 +26,7 @@ class FiddleTest(quantum_test.QuantumTestCase):
 
         out_file = open('out_file_fiddle_2x2nthroot.csv', 'w')
 
-        n_max = 12
-        for n in range(n_max):
+        for n in range(self.n_max):
             nth_root_matrix = root(base_matrix, n)
 
             actual_matrix = np.identity(2)
@@ -61,8 +61,8 @@ class FiddleTest(quantum_test.QuantumTestCase):
 
         out_file = open('out_file_fiddle_nxnnthroot.csv', 'w')
 
-        n_max = 12
-        for n in range(1, n_max):
+
+        for n in range(1, self.n_max):
             base_matrix = make_controlled(gate_literals.X, n)
             nth_root_matrix = root(base_matrix, n)
 

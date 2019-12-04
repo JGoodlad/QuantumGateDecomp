@@ -12,7 +12,7 @@ import quantum_test
 
 
 class ControlledGateTest(quantum_test.QuantumTestCase):
-    _MAX_QUBITS = 10
+    _MAX_QUBITS = 5
 
     def setUp(self):
         super().setUp()
@@ -67,7 +67,6 @@ class ControlledGateTest(quantum_test.QuantumTestCase):
                         np.testing.assert_almost_equal(actual_final_state, expected_final_state, decimal=5)
 
 
-
     def test_RecursiveControlledGate_CnU(self):
 
         gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
@@ -90,7 +89,7 @@ class ControlledGateTest(quantum_test.QuantumTestCase):
                         np.testing.assert_almost_equal(actual_final_state, expected_final_state, decimal=5)
 
     def test_ElementarilyComposedGates_U(self):
-        gate_builder = controlled_gates.ElementaryControlledGate(self.primitves)
+        gate_builder = controlled_gates.ElementaryComposedGate(self.primitves)
 
         [qubit] = self.get_qubits(1)
         for gate in self.gates_to_test:
@@ -108,7 +107,7 @@ class ControlledGateTest(quantum_test.QuantumTestCase):
                     np.testing.assert_almost_equal(actual_final_state, expected_final_state, decimal=5)
 
     def test_ElementarilyComposedGates_CU(self):
-        gate_builder = controlled_gates.ElementarilyComposedGates(self.primitves)
+        gate_builder = controlled_gates.ElementaryComposedGate(self.primitves)
 
         qubits = self.get_qubits(2)
         for gate in self.gates_to_test:
@@ -204,15 +203,13 @@ class ControlledGateTest(quantum_test.QuantumTestCase):
                     sep=',', file=out_file, flush=True)
         out_file.close()
 
-
-
-
     def elapsed_time(self, f):
         start = time.time()
         ret = f()
         end = time.time()
         elapsed = int(round((end - start) * 1000))
         return elapsed, ret
+
 
 if __name__ == '__main__':
     unittest.main()
