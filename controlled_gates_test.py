@@ -11,7 +11,7 @@ import primitives_cirq
 import quantum_test
 
 
-class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
+class ControlledGateTest(quantum_test.QuantumTestCase):
     _MAX_QUBITS = 10
 
     def setUp(self):
@@ -46,7 +46,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
             ('Rz', gate_literals.Rz(theta))
         ]
 
-    def test_IterativeControlledGate_CU(self):
+    def test_IterativeControlledGate_CnU(self):
         gate_builder = controlled_gates.IterativeControlledGate(self.primitves)
 
         for n in range(2, self._MAX_QUBITS + 1):
@@ -58,7 +58,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
                         initial_bit_string = self.to_bit_string(initial_state_number, n)
                         initial_state = self.to_state(initial_bit_string)
 
-                        actual_gates = gate_builder.controlled_n_unitary_gate(gate, qubits[-1], *qubits[:-1])
+                        actual_gates = gate_builder.CnU(gate, qubits[-1], *qubits[:-1])
                         actual_final_state = self.simulate(qubits, actual_gates, np.copy(initial_state))
 
                         expected_gates = [self.primitves.CnU(gate, qubits[-1], *qubits[:-1])]
@@ -68,7 +68,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
 
 
 
-    def test_controlled_n_unitary_gate(self):
+    def test_RecursiveControlledGate_CnU(self):
 
         gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
 
@@ -81,7 +81,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
                         initial_bit_string = self.to_bit_string(initial_state_number, n)
                         initial_state = self.to_state(initial_bit_string)
 
-                        actual_gates = gate_builder.controlled_n_unitary_gate(gate, qubits[-1], *qubits[:-1])
+                        actual_gates = gate_builder.CnU(gate, qubits[-1], *qubits[:-1])
                         actual_final_state = self.simulate(qubits, actual_gates, np.copy(initial_state))
 
                         expected_gates = [self.primitves.CnU(gate, qubits[-1], *qubits[:-1])]
@@ -90,7 +90,7 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
                         np.testing.assert_almost_equal(actual_final_state, expected_final_state, decimal=5)
 
     def test_ElementarilyComposedGates_U(self):
-        gate_builder = controlled_gates.ElementarilyComposedGates(self.primitves)
+        gate_builder = controlled_gates.ElementaryControlledGate(self.primitves)
 
         [qubit] = self.get_qubits(1)
         for gate in self.gates_to_test:
@@ -125,14 +125,14 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
 
                     np.testing.assert_almost_equal(actual_final_state, expected_final_state, decimal=5)
 
-    def test_GateTiming(self):
+    def test_GateTiming_Single(self):
         recursive_gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
         iterative_gate_builder = controlled_gates.IterativeControlledGate(self.primitves)
 
-        recursive_CN = lambda *x: recursive_gate_builder.controlled_n_unitary_gate(*x)
-        iterative_CN = lambda *x: iterative_gate_builder.controlled_n_unitary_gate(*x)
+        recursive_CN = lambda *x: recursive_gate_builder.CnU(*x)
+        iterative_CN = lambda *x: iterative_gate_builder.CnU(*x)
 
-        out_file = open('out_file.csv', 'w')
+        out_file = open('out_file_single.csv', 'w')
 
         print('name,gate_name,n,initial_state_number,construction_time,simulation_time,precision,abs_error,euclid_error', file=out_file)
         for name, CN in [('rec', recursive_CN), ('itr', iterative_CN)]:
@@ -161,14 +161,14 @@ class RecuriveControlledGateTest(quantum_test.QuantumTestCase):
         out_file.close()
         
 
-    def test_GateTimingAvg(self):
+    def test_GateTiming_Aggrigated(self):
         recursive_gate_builder = controlled_gates.RecuriveControlledGate(self.primitves)
         iterative_gate_builder = controlled_gates.IterativeControlledGate(self.primitves)
 
-        recursive_CN = lambda *x: recursive_gate_builder.controlled_n_unitary_gate(*x)
-        iterative_CN = lambda *x: iterative_gate_builder.controlled_n_unitary_gate(*x)
+        recursive_CN = lambda *x: recursive_gate_builder.CnU(*x)
+        iterative_CN = lambda *x: iterative_gate_builder.CnU(*x)
 
-        out_file = open('out_file_avg.csv', 'w')
+        out_file = open('out_file_agg.csv', 'w')
 
         print('name,gate_name,n,np.average(construction_times),np.average(simulation_times),np.min(precisions),np.average(abs_errors),np.average(euclid_errors)', file=out_file)
         

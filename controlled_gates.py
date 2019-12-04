@@ -56,7 +56,7 @@ class RecuriveControlledGate(object):
         return gates
 
     # TODO: Enforce at least one control bit via action_qubit, control_1, *control_rest
-    def controlled_n_unitary_gate(self, unitary, action_qubit, *control_qubits):
+    def CnU(self, unitary, action_qubit, *control_qubits):
         gates = self._controlled_n_unitary_gate_recursive(unitary, action_qubit, *control_qubits)
         # print(f'Gates used in construction: {len(gates)}')
         return gates
@@ -147,14 +147,14 @@ class IterativeControlledGate(object):
         return program_ordered_gates
 
 
-    def controlled_n_unitary_gate(self, unitary, action_qubit, *control_qubits):
+    def CnU(self, unitary, action_qubit, *control_qubits):
         gates = self._controlled_n_unitary_gate_iterative(unitary, action_qubit, *control_qubits)
         return gates
 
     
 
 
-class ElementarilyComposedGates(object):
+class ElementaryComposedGate(object):
 
     def __init__(self, gate_primitves: primitives.GatePrimitives):
         self.primitives = gate_primitves
